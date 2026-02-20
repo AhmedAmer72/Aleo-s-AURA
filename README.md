@@ -1,19 +1,32 @@
 # 🌟 Aura Protocol
 
-## Zero-Knowledge Proof of Income on Aleo
+## Zero-Knowledge Income Attestation on Aleo
 
-Aura is a revolutionary decentralized protocol that enables **privacy-preserving income verification** using zero-knowledge proofs on the Aleo blockchain. Get verified CreditBadges that prove your income tier without revealing your actual salary, employer, or banking details.
+Aura is a decentralized protocol that enables **privacy-preserving income attestation** using zero-knowledge proofs on the Aleo blockchain. Get CreditBadges that prove your income tier without revealing your actual salary, employer, or banking details.
 
 ![Aura Protocol Banner](./docs/banner.png)
 
 ---
 
+## 🔧 How It Works
+
+Aura uses a **commitment-based attestation** approach:
+
+1. **Email Parsing** - You paste your payroll/bank email source, which is parsed locally in your browser
+2. **Income Extraction** - The system extracts income amounts from the email body using pattern matching
+3. **Tier Calculation** - Annual income is calculated to determine your tier (Bronze/Silver/Gold)
+4. **On-Chain Commitment** - A zero-knowledge proof is generated and your CreditBadge is minted on Aleo
+
+> ⚠️ **Note**: This is a proof-of-concept. Full DKIM cryptographic signature verification would require additional backend infrastructure. The current implementation validates email structure and extracts income data locally.
+
+---
+
 ## ✨ Features
 
-### 🔐 Privacy-First Verification
-- Verify income from payroll/bank emails using **DKIM signatures**
-- Generate **zero-knowledge proofs** that reveal only income tier
-- Your salary, employer, and bank details **never leave your device**
+### 🔐 Privacy-First Design
+- Email content is **processed locally** and never leaves your browser
+- Generate **zero-knowledge proofs** that reveal only your income tier
+- Your salary, employer, and bank details remain **private**
 
 ### 🏆 CreditBadge System
 Three tiers of verifiable income credentials:
@@ -33,7 +46,6 @@ Three tiers of verifiable income credentials:
 - Stunning animations with Framer Motion
 - Glassmorphism design language
 - Fully responsive across all devices
-- Dark mode optimized
 
 ---
 
@@ -123,10 +135,10 @@ aura/
 - **Leo** - ZK programming language
 - **@provablehq/sdk** - Aleo JavaScript SDK
 
-### Cryptography
-- **DKIM** - Email authentication standard
-- **RSA-SHA256** - Signature verification
-- **Poseidon Hash** - ZK-friendly hashing
+### Privacy Features
+- **BHP256** - ZK-friendly hashing for commitments
+- **Email Parsing** - Local extraction of income data
+- **Private Records** - Encrypted UTXO-based credentials on Aleo
 
 ---
 

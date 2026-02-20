@@ -16,13 +16,23 @@ import {
   Eye,
   EyeOff,
   Info,
-  ExternalLink
+  ExternalLink,
+  AlertTriangle
 } from 'lucide-react'
 import { useWallet } from '../contexts/WalletContext'
 import { useAuraStore } from '../store/auraStore'
 import { Link } from 'react-router-dom'
 import { verifyIncomeTransaction } from '../services/transactions'
 import { getPublicBalance, formatAddress, waitForTransaction, getExplorerUrl } from '../services/aleoNetwork'
+import { 
+  parseEmail, 
+  extractIncomeFromBody, 
+  detectFrequency, 
+  calculateAnnualIncome, 
+  determineIncomeTier,
+  detectSourceType,
+  hashDomain
+} from '../workers/emailVerification'
 
 const VerifyPage = () => {
   const [step, setStep] = useState(1)
@@ -63,47 +73,79 @@ const VerifyPage = () => {
     startVerification()
     
     try {
-      // Step 1: Parse email
-      updateVerificationProgress('parsing', 10, 'Parsing email headers...')
-      await new Promise(resolve => setTimeout(resolve, 800))
+      // Step 1: Validate input is actually email content
+      updateVerificationProgress('parsing', 5, 'Validating input format...')
+      await new Promise(resolve => setTimeout(resolve, 300))
       
-      updateVerificationProgress('parsing', 25, 'Extracting DKIM signature...')
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Basic validation - require minimum email-like structure
+      const trimmedContent = emailContent.trim()
       
-      // Step 2: Verify DKIM
-      updateVerificationProgress('verifying', 40, 'Fetching DNS public key for domain...')
-      await new Promise(resolve => setTimeout(resolve, 1200))
-      
-      updateVerificationProgress('verifying', 55, 'Verifying RSA-SHA256 signature...')
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      updateVerificationProgress('verifying', 70, 'Signature verified! Extracting income data...')
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Step 3: Generate ZK proof and submit transaction
-      updateVerificationProgress('generating', 85, 'Generating zero-knowledge proof...')
-      
-      // Parse income from email (simplified - in production use proper parsing)
-      const incomeMatch = emailContent.match(/\$?([\d,]+\.?\d*)/g)
-      const monthlyIncome = incomeMatch ? parseFloat(incomeMatch[0].replace(/[$,]/g, '')) : 5000
-      const annualIncome = monthlyIncome * 12
-      
-      // Determine tier based on income
-      let tier = 'bronze'
-      let incomeBracket = 1
-      if (annualIncome >= 150000) {
-        tier = 'gold'
-        incomeBracket = 3
-      } else if (annualIncome >= 75000) {
-        tier = 'silver'
-        incomeBracket = 2
+      // Check for minimum length (emails have headers, body, etc)
+      if (trimmedContent.length < 100) {
+        throw new Error('Invalid input: Please paste the full email source (show original/view source from your email client). The input is too short to be a valid email.')
       }
       
-      // Create the transaction
+      // Check for basic email header indicators
+      const hasEmailIndicators = 
+        trimmedContent.toLowerCase().includes('from:') ||
+        trimmedContent.toLowerCase().includes('subject:') ||
+        trimmedContent.toLowerCase().includes('date:') ||
+        trimmedContent.toLowerCase().includes('received:') ||
+        trimmedContent.toLowerCase().includes('dkim-signature:')
+      
+      if (!hasEmailIndicators) {
+        throw new Error('Invalid input: This does not appear to be email source. Please use "Show Original" or "View Source" in your email client to get the raw email headers and body.')
+      }
+      
+      // Step 2: Parse email structure
+      updateVerificationProgress('parsing', 15, 'Parsing email headers...')
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      const parsed = parseEmail(trimmedContent)
+      
+      // Step 3: Check for DKIM signature
+      updateVerificationProgress('parsing', 25, 'Checking DKIM signature...')
+      await new Promise(resolve => setTimeout(resolve, 400))
+      
+      // Note: We check for DKIM but explain honestly what we do with it
+      const hasDKIM = parsed.dkimSignature && parsed.dkimSignature.b
+      
+      // Step 4: Extract income data
+      updateVerificationProgress('parsing', 35, 'Extracting income data from email body...')
+      await new Promise(resolve => setTimeout(resolve, 600))
+      
+      const incomeData = extractIncomeFromBody(parsed.body || trimmedContent)
+      
+      if (!incomeData) {
+        throw new Error('Could not extract income amount from email. Please ensure this is a deposit notification, payslip, or offer letter that contains a dollar amount (e.g., "$5,000", "salary: $80,000")')
+      }
+      
+      // Step 5: Calculate annual income and tier
+      updateVerificationProgress('verifying', 50, 'Calculating income tier...')
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      const frequencyData = detectFrequency(parsed.body || trimmedContent, parsed.subject)
+      const annualIncome = calculateAnnualIncome(incomeData.amount, frequencyData.frequency)
+      const tierData = determineIncomeTier(annualIncome)
+      
+      if (!tierData.tier) {
+        throw new Error(`Income of $${annualIncome.toLocaleString()}/year is below the minimum threshold of $25,000/year required for a CreditBadge.`)
+      }
+      
+      // Step 6: Generate commitment hash
+      updateVerificationProgress('verifying', 65, 'Generating cryptographic commitment...')
+      await new Promise(resolve => setTimeout(resolve, 800))
+      
+      const sourceType = detectSourceType(parsed.domain || 'unknown.com', parsed.body || trimmedContent)
+      const domainHash = hashDomain(parsed.domain || 'email.verified')
+      
+      // Step 7: Create transaction
+      updateVerificationProgress('generating', 80, 'Creating on-chain proof transaction...')
+      
       const transaction = await verifyIncomeTransaction(
         publicKey,
-        incomeBracket,
-        'bank_statement'
+        tierData.bracket,
+        sourceType.label || 'email'
       )
       
       updateVerificationProgress('generating', 90, 'Submitting transaction to Aleo network...')
@@ -115,7 +157,6 @@ const VerifyPage = () => {
         console.log('[Verify] Transaction/Request ID:', txResult)
         setTxId(txResult)
         
-        // Check if this is a real Aleo tx ID or a wallet request ID
         const isAleoTxId = txResult.startsWith('at1')
         
         if (isAleoTxId) {
@@ -124,34 +165,26 @@ const VerifyPage = () => {
           updateVerificationProgress('generating', 95, 'Transaction submitted to wallet...')
         }
         
-        // Wait for transaction to be confirmed (with timeout)
         const confirmResult = await waitForTransaction(txResult, 30)
         
-        // Determine final status
         const isConfirmed = confirmResult && confirmResult.success && !confirmResult.pending
         const isPending = confirmResult && (confirmResult.pending || !confirmResult.success)
         
-        // Add to transaction history
-        addTransaction({
-          id: txResult,
-          type: 'verify_income',
-          status: isConfirmed ? 'confirmed' : 'pending',
-          timestamp: Date.now()
-        })
-        
         const verificationResult = {
-          tier,
-          source: 'verified-email.com',
-          incomeBracket,
-          annualIncome,
+          tier: tierData.tier,
+          source: parsed.domain || 'verified-email.com',
+          sourceType: sourceType.label,
+          frequency: frequencyData.label,
+          incomeBracket: tierData.bracket,
+          annualIncome: annualIncome,
           verificationHash: txResult,
           txId: txResult,
-          pending: isPending
+          pending: isPending,
+          hasDKIM: hasDKIM
         }
 
         completeVerification(verificationResult)
         
-        // Wait a moment for wallet to process, then refresh records
         await new Promise(resolve => setTimeout(resolve, 2000))
         if (requestRecords) {
           console.log('[Verify] Refreshing records from wallet...')
@@ -160,7 +193,7 @@ const VerifyPage = () => {
         
         setStep(3)
       } else {
-        throw new Error('Transaction was rejected')
+        throw new Error('Transaction was rejected by wallet')
       }
     } catch (error) {
       console.error('Verification failed:', error)
@@ -420,10 +453,30 @@ const Step2Email = ({
       exit={{ opacity: 0, x: -20 }}
       className="space-y-6"
     >
+      {/* Honest Protocol Disclaimer */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass rounded-xl p-4 border border-amber-500/30 bg-amber-500/5"
+      >
+        <div className="flex items-start space-x-3">
+          <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <p className="font-medium text-amber-400 mb-1">Proof-of-Concept Notice</p>
+            <p className="text-gray-400">
+              This demo creates a <strong className="text-white">commitment-based attestation</strong> on Aleo. 
+              While it parses email structure and extracts income data, full DKIM cryptographic verification 
+              requires server-side infrastructure. The income tier is derived from parsed amounts in your email.
+            </p>
+          </div>
+        </div>
+      </motion.div>
+
       {/* Info Banner */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
         className="glass rounded-xl p-4 flex items-start space-x-3"
       >
         <Info className="w-5 h-5 text-aura-primary flex-shrink-0 mt-0.5" />
@@ -482,6 +535,26 @@ const Step2Email = ({
             className="card"
           >
             <VerificationProgress verification={verification} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Error Display */}
+      <AnimatePresence>
+        {verification.status === 'error' && verification.message && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="glass rounded-xl p-4 border border-red-500/30 bg-red-500/10"
+          >
+            <div className="flex items-start space-x-3">
+              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-red-400 mb-1">Verification Failed</p>
+                <p className="text-sm text-gray-300">{verification.message}</p>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -592,9 +665,9 @@ const VerificationProgress = ({ verification }) => {
       {/* Visual ZK Process */}
       <div className="grid grid-cols-3 gap-4 pt-4">
         {[
-          { label: 'Parse DKIM', status: verification.progress >= 25 },
-          { label: 'Verify Sig', status: verification.progress >= 55 },
-          { label: 'Gen Proof', status: verification.progress >= 85 },
+          { label: 'Parse Email', status: verification.progress >= 25 },
+          { label: 'Extract $', status: verification.progress >= 55 },
+          { label: 'On-Chain', status: verification.progress >= 85 },
         ].map((step, index) => (
           <motion.div
             key={step.label}

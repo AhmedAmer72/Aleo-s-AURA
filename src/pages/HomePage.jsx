@@ -37,28 +37,28 @@ const HomePage = () => {
       <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden">
         {/* Animated background elements */}
         <div className="absolute inset-0 overflow-hidden">
-          {/* Central glowing orb */}
+          {/* Central glowing orb - teal theme */}
           <motion.div
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full"
             style={{
-              background: 'radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%)',
+              background: 'radial-gradient(circle, rgba(20, 184, 166, 0.12) 0%, transparent 70%)',
             }}
             animate={{
-              scale: [1, 1.2, 1],
-              opacity: [0.5, 0.8, 0.5],
+              scale: [1, 1.15, 1],
+              opacity: [0.4, 0.7, 0.4],
             }}
             transition={{
-              duration: 8,
+              duration: 10,
               repeat: Infinity,
               ease: "easeInOut"
             }}
           />
           
-          {/* Orbiting elements */}
-          {[...Array(6)].map((_, i) => (
+          {/* Orbiting elements - fewer, more subtle */}
+          {[...Array(4)].map((_, i) => (
             <motion.div
               key={i}
-              className="absolute top-1/2 left-1/2 w-4 h-4 rounded-full bg-aura-accent/50"
+              className="absolute top-1/2 left-1/2 w-3 h-3 rounded-full"
               style={{
                 transformOrigin: '0 0',
               }}
@@ -66,17 +66,21 @@ const HomePage = () => {
                 rotate: 360,
               }}
               transition={{
-                duration: 15 + i * 5,
+                duration: 20 + i * 8,
                 repeat: Infinity,
                 ease: "linear",
               }}
             >
               <motion.div
-                className="w-3 h-3 rounded-full"
+                className="w-2 h-2 rounded-full"
                 style={{
-                  background: `linear-gradient(135deg, #6366f1, #a855f7)`,
-                  marginLeft: `${100 + i * 50}px`,
-                  boxShadow: '0 0 20px rgba(139, 92, 246, 0.5)',
+                  background: i % 2 === 0 
+                    ? `linear-gradient(135deg, #14b8a6, #06b6d4)`
+                    : `linear-gradient(135deg, #f59e0b, #fbbf24)`,
+                  marginLeft: `${120 + i * 60}px`,
+                  boxShadow: i % 2 === 0 
+                    ? '0 0 15px rgba(20, 184, 166, 0.4)'
+                    : '0 0 15px rgba(245, 158, 11, 0.4)',
                 }}
               />
             </motion.div>
@@ -159,10 +163,10 @@ const HomePage = () => {
             className="grid grid-cols-2 md:grid-cols-4 gap-8"
           >
             {[
-              { label: 'Total Verified', value: '$12.5M', icon: FileCheck },
-              { label: 'Active Badges', value: '2,847', icon: Shield },
-              { label: 'Loans Issued', value: '$4.2M', icon: Coins },
-              { label: 'Privacy Score', value: '100%', icon: Lock },
+              { label: 'Network', value: 'Testnet', icon: Globe },
+              { label: 'Credential Type', value: 'CreditBadge', icon: Shield },
+              { label: 'Loan Pools', value: '3 Tiers', icon: Coins },
+              { label: 'Privacy', value: 'ZK-Proof', icon: Lock },
             ].map((stat, index) => (
               <motion.div
                 key={stat.label}
@@ -308,16 +312,16 @@ const HowItWorksPreview = () => {
     {
       step: "01",
       icon: Mail,
-      title: "Forward Your Email",
-      description: "Forward a DKIM-signed email (paystub, offer letter, deposit alert) to Aura.",
-      detail: "Works with Google, Chase, ADP, Gusto, and more"
+      title: "Paste Email Source",
+      description: "Copy the raw source of your income email (paystub, offer letter, deposit alert).",
+      detail: "Works with Gmail, Chase, ADP, Gusto, and more"
     },
     {
       step: "02",
       icon: Zap,
-      title: "ZK Proof Generated",
-      description: "Our circuit verifies the cryptographic signature and extracts only the salary number.",
-      detail: "Email content is never stored or transmitted"
+      title: "Income Extracted",
+      description: "The system parses your email locally and extracts the income amount.",
+      detail: "Email content is processed locally in your browser"
     },
     {
       step: "03",
@@ -331,7 +335,7 @@ const HowItWorksPreview = () => {
       icon: Coins,
       title: "Access Credit",
       description: "Use your badge to borrow from DeFi lending pools with better rates.",
-      detail: "No documents, no data exposure"
+      detail: "No documents stored, privacy preserved"
     }
   ]
 
@@ -420,32 +424,32 @@ const FeaturesSection = () => {
     {
       icon: EyeOff,
       title: "Complete Privacy",
-      description: "Your email content, salary amount, and personal details never leave your device. Only the proof is shared."
+      description: "Your email content is processed locally in your browser. Only the commitment hash goes on-chain."
     },
     {
       icon: Shield,
-      title: "Cryptographic Security",
-      description: "DKIM signatures prove email authenticity. ZK circuits ensure data extraction without exposure."
+      title: "On-Chain Credentials",
+      description: "Private CreditBadges are minted as encrypted records on Aleo, visible only to you."
     },
     {
       icon: Globe,
       title: "Universal Access",
-      description: "Works with any DKIM-signed email. 4 billion email users can access DeFi credit."
+      description: "Works with emails from major banks, payroll providers, and employers."
     },
     {
       icon: TrendingUp,
       title: "Better Rates",
-      description: "Higher income verification = lower interest rates. Finally, good credit matters in DeFi."
+      description: "Higher income verification = lower interest rates. Good credit finally matters in DeFi."
     },
     {
       icon: Zap,
       title: "Instant Verification",
-      description: "No waiting for document review. Proof generation happens in seconds in your browser."
+      description: "No waiting for document review. Verification happens in seconds in your browser."
     },
     {
       icon: Users,
       title: "Composable",
-      description: "Your CreditBadge works across all Aleo DeFi protocols. One verification, endless possibilities."
+      description: "Your CreditBadge works across Aleo DeFi protocols. One verification, endless possibilities."
     }
   ]
 

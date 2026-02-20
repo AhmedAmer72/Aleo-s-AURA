@@ -37,13 +37,15 @@ const ParticleBackground = () => {
             top: `${particle.y}%`,
             width: particle.size,
             height: particle.size,
-            background: `rgba(139, 92, 246, ${0.3 + Math.random() * 0.4})`,
+            background: particle.id % 3 === 0 
+              ? `rgba(245, 158, 11, ${0.2 + Math.random() * 0.3})`  // amber accent
+              : `rgba(20, 184, 166, ${0.2 + Math.random() * 0.4})`, // teal
           }}
           animate={{
-            y: [0, -100, 0],
-            x: [0, Math.random() * 50 - 25, 0],
-            opacity: [0.2, 0.8, 0.2],
-            scale: [1, 1.5, 1],
+            y: [0, -80, 0],
+            x: [0, Math.random() * 40 - 20, 0],
+            opacity: [0.15, 0.6, 0.15],
+            scale: [1, 1.3, 1],
           }}
           transition={{
             duration: particle.duration,
@@ -55,27 +57,27 @@ const ParticleBackground = () => {
       ))}
 
       {/* Animated lines */}
-      <svg className="absolute inset-0 w-full h-full opacity-10">
+      <svg className="absolute inset-0 w-full h-full opacity-8">
         <defs>
           <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#6366f1" stopOpacity="0" />
-            <stop offset="50%" stopColor="#8b5cf6" stopOpacity="1" />
-            <stop offset="100%" stopColor="#a855f7" stopOpacity="0" />
+            <stop offset="0%" stopColor="#14b8a6" stopOpacity="0" />
+            <stop offset="50%" stopColor="#06b6d4" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
           </linearGradient>
         </defs>
-        {[...Array(5)].map((_, i) => (
+        {[...Array(4)].map((_, i) => (
           <motion.line
             key={i}
             x1="0%"
-            y1={`${20 + i * 15}%`}
+            y1={`${20 + i * 18}%`}
             x2="100%"
-            y2={`${30 + i * 15}%`}
+            y2={`${30 + i * 18}%`}
             stroke="url(#lineGradient)"
             strokeWidth="1"
             initial={{ pathLength: 0, opacity: 0 }}
             animate={{ 
               pathLength: [0, 1, 0],
-              opacity: [0, 0.5, 0],
+              opacity: [0, 0.4, 0],
             }}
             transition={{
               duration: 8,

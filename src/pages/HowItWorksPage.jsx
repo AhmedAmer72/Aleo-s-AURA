@@ -33,9 +33,14 @@ const HowItWorksPage = () => {
             The <span className="gradient-text">Technology</span> Behind Aura
           </h1>
           <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-            Combining DKIM email verification with zero-knowledge proofs to create 
-            the first privacy-preserving income verification protocol on Aleo.
+            Privacy-preserving income attestation using commitment-based proofs on Aleo.
+            Your email is parsed locally, income extracted, and a CreditBadge minted on-chain.
           </p>
+          <div className="mt-6 inline-flex items-center px-4 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
+            <span className="text-amber-400 text-sm">
+              📋 Proof-of-Concept: This demo parses emails locally. Full DKIM cryptographic verification would require additional infrastructure.
+            </span>
+          </div>
         </motion.div>
       </section>
 
@@ -159,42 +164,42 @@ const TheSolution = () => {
   const steps = [
     {
       icon: Mail,
-      title: "Email with DKIM Signature",
-      description: "Major email providers (Gmail, Outlook) sign every email with RSA-SHA256 (DKIM). This signature proves the email really came from that domain.",
+      title: "Paste Email Source",
+      description: "Copy the raw source of your income email from your email client. The system validates that it contains proper email headers.",
       details: [
-        "DKIM-Signature header contains cryptographic proof",
-        "Public key is published in DNS TXT records",
-        "Signature covers From, Subject, Date, and body"
+        "Use 'Show Original' or 'View Source' in Gmail/Outlook",
+        "Email must contain recognizable headers (From, Subject, Date)",
+        "DKIM signature presence is detected but not cryptographically verified"
       ]
     },
     {
       icon: FileText,
       title: "Parse & Extract",
-      description: "The Aura circuit parses the email, verifies the DKIM signature, and uses pattern matching to extract only the income amount.",
+      description: "The email is parsed locally in your browser. Pattern matching extracts income amounts from the body.",
       details: [
-        "Regex-like pattern matching in ZK circuit",
-        "Finds 'Your deposit of $X' patterns",
-        "Extracts numeric value, discards everything else"
+        "Regex pattern matching for income amounts",
+        "Finds '$X' patterns, deposit amounts, salary figures",
+        "All processing happens locally - nothing leaves your browser"
       ]
     },
     {
       icon: Zap,
-      title: "Generate ZK Proof",
-      description: "A zero-knowledge proof is generated that proves: (1) The email is authentic, (2) The income is above threshold, without revealing the actual number.",
+      title: "Calculate Income Tier",
+      description: "Annual income is calculated from the extracted amount. Your tier (Bronze/Silver/Gold) is determined based on thresholds.",
       details: [
-        "Proof is ~200 bytes, verifiable by anyone",
-        "No trusted setup required (Aleo uses Marlin)",
-        "Computation happens 100% client-side"
+        "Bronze: $25k+, Silver: $75k+, Gold: $150k+",
+        "Frequency detection (weekly, monthly, annual)",
+        "Commitment hash generated for on-chain recording"
       ]
     },
     {
       icon: Shield,
       title: "Mint CreditBadge",
-      description: "A private Record is minted to your Aleo wallet. This badge proves your income tier and can be used to access lending pools.",
+      description: "A private Record is minted to your Aleo wallet via Leo Wallet. This badge proves your income tier.",
       details: [
         "Record is encrypted, only you can view it",
-        "Contains tier, expiry, and verification hash",
-        "Composable with any Aleo DeFi protocol"
+        "Contains tier, expiry, and commitment hash",
+        "Composable with Aleo DeFi protocols"
       ]
     }
   ]
@@ -281,7 +286,7 @@ const TechnicalDeepDive = () => {
         </motion.div>
 
         <div className="grid lg:grid-cols-2 gap-12">
-          {/* DKIM Verification */}
+          {/* Email Parsing */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             animate={isInView ? { opacity: 1, x: 0 } : {}}
@@ -290,23 +295,22 @@ const TechnicalDeepDive = () => {
           >
             <div className="flex items-center space-x-3 mb-6">
               <Key className="w-8 h-8 text-aura-primary" />
-              <h3 className="text-xl font-bold text-white">DKIM Verification in ZK</h3>
+              <h3 className="text-xl font-bold text-white">Email Parsing & Extraction</h3>
             </div>
             
             <div className="space-y-4 mb-6">
               <p className="text-gray-400 text-sm">
-                DomainKeys Identified Mail (DKIM) uses RSA-2048 signatures to prove 
-                email authenticity. Our circuit verifies this signature inside the ZK proof.
+                The system parses raw email source locally in your browser. It validates 
+                email structure and extracts income amounts using pattern matching.
               </p>
               
               <div className="glass rounded-lg p-4">
-                <p className="text-xs text-gray-500 mb-2">Example DKIM Header</p>
+                <p className="text-xs text-gray-500 mb-2">Detected Patterns</p>
                 <pre className="text-xs font-mono text-aura-accent overflow-x-auto">
-{`DKIM-Signature: v=1; a=rsa-sha256;
-  d=chase.com; s=selector1;
-  h=from:to:subject:date;
-  bh=47DEQpj8HBSa+/TImW+5JCe...;
-  b=dzdVyOfAKCdLXdJOc...`}
+{`"Your deposit of $5,000.00"
+"Net pay: $4,250.00"
+"Annual salary: $95,000"
+"Base compensation: $120,000"`}
                 </pre>
               </div>
             </div>
@@ -316,20 +320,27 @@ const TechnicalDeepDive = () => {
                 <div className="w-6 h-6 rounded-full bg-aura-success/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                   <span className="text-xs text-aura-success">1</span>
                 </div>
-                <p className="text-sm text-gray-400">Fetch public key from DNS (chase.com._domainkey)</p>
+                <p className="text-sm text-gray-400">Parse email headers (From, Subject, Date)</p>
               </div>
               <div className="flex items-start space-x-3">
                 <div className="w-6 h-6 rounded-full bg-aura-success/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                   <span className="text-xs text-aura-success">2</span>
                 </div>
-                <p className="text-sm text-gray-400">Hash the canonicalized headers and body</p>
+                <p className="text-sm text-gray-400">Extract income amounts with regex patterns</p>
               </div>
               <div className="flex items-start space-x-3">
                 <div className="w-6 h-6 rounded-full bg-aura-success/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                   <span className="text-xs text-aura-success">3</span>
                 </div>
-                <p className="text-sm text-gray-400">Verify RSA-SHA256 signature in circuit</p>
+                <p className="text-sm text-gray-400">Calculate annual income and determine tier</p>
               </div>
+            </div>
+            
+            <div className="mt-6 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+              <p className="text-xs text-amber-400">
+                ⚠️ Note: Full DKIM cryptographic verification requires server-side infrastructure 
+                for DNS lookups and RSA verification.
+              </p>
             </div>
           </motion.div>
 
@@ -512,27 +523,27 @@ const FAQ = () => {
   const faqs = [
     {
       q: "What emails are supported?",
-      a: "Any email with a DKIM signature. This includes all major providers: Gmail, Outlook, Yahoo, and bank emails from Chase, Bank of America, Wells Fargo. Payroll emails from ADP, Gusto, Workday are also supported."
+      a: "Emails with recognizable income patterns from major providers: Gmail, Outlook, Chase, Bank of America, Wells Fargo, ADP, Gusto, Workday. The email must contain a dollar amount related to income, deposit, or salary."
     },
     {
       q: "Is my email data stored anywhere?",
-      a: "No. All processing happens in your browser using WebAssembly. The raw email never leaves your device. Only the cryptographic proof is submitted to the Aleo network."
+      a: "No. All processing happens in your browser using JavaScript. The raw email never leaves your device. Only a commitment hash and your tier are recorded on-chain."
     },
     {
-      q: "Can I fake my income?",
-      a: "No. DKIM signatures are cryptographically unforgeable. The proof verifies that the email was actually signed by the claimed domain (e.g., chase.com). Forging a signature is computationally impossible."
+      q: "How does verification work?",
+      a: "This proof-of-concept parses your email locally, extracts income amounts using pattern matching, and calculates your tier. The transaction is sent to Aleo via Leo Wallet, minting a private CreditBadge record."
+    },
+    {
+      q: "Is this real DKIM verification?",
+      a: "This demo validates email structure and extracts income data, but does not perform full DKIM cryptographic signature verification. That would require server-side DNS lookups and RSA verification infrastructure."
     },
     {
       q: "How long is my CreditBadge valid?",
       a: "Badges expire after 1 year. You'll need to re-verify with a recent email to maintain your credit standing. This ensures the badge reflects your current income."
     },
     {
-      q: "What if I lose my wallet?",
-      a: "Your CreditBadge is tied to your Aleo wallet. If you recover your wallet using your seed phrase, your badge will still be accessible. If you lose access permanently, you'll need to create a new verification."
-    },
-    {
       q: "Which DeFi protocols accept CreditBadge?",
-      a: "Aura is designed to be composable. Any Aleo DeFi protocol can query your CreditBadge to offer better rates or higher loan limits. We're actively working with partners to expand the ecosystem."
+      a: "Aura is designed to be composable. Any Aleo DeFi protocol can query your CreditBadge to offer better rates or higher loan limits. The lending pools in this demo demonstrate that functionality."
     }
   ]
 
